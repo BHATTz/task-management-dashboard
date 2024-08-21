@@ -1,0 +1,32 @@
+Project: Task Management Dashboard
+
+Overview:Create a task management dashboard where users can add, edit, delete, and filter tasks. The dashboard will display tasks with their statuses (e.g., “Pending,” “In Progress,” “Completed”). You will use various React hooks to manage the state, perform side effects, and optimize performance.
+
+Features:
+
+Task List:
+Display a list of tasks with their title, description, and status.
+Use useState to manage the list of tasks and their states.
+
+Add New Task:
+Provide a form to add new tasks.
+Update the task list using useState.
+
+Edit Task:
+Allow users to edit the title, description, or status of a task.
+Update the state of the specific task in the list.
+
+Delete Task:
+Enable users to delete tasks from the list.
+Update the state to remove the task.
+
+Filter Tasks:
+Add options to filter tasks based on their status (e.g., “All,” “Pending,” “Completed”).
+Use useMemo to optimize filtering and only recompute the filtered list when the task list or filter criteria change.
+
+Save Tasks to Local Storage:
+Use useEffect to save the task list to local storage whenever the list changes.
+On component mount, load the tasks from local storage.
+
+Optimized Task Functions:
+Use useCallback to memoize functions that manage tasks (e.g., adding, editing, deleting) to avoid unnecessary re-renders.
