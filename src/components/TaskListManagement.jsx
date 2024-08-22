@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 
 export default function TaskListManagement() {
+  // State variables
   const [taskDescription, setTaskDescription] = useState("");
   const [taskTitle, setTaskTitle] = useState("");
   const [taskList, setTaskList] = useState([]);
@@ -8,15 +9,19 @@ export default function TaskListManagement() {
   const [editTaskIndex, setEditTaskIndex] = useState(null);
   const [filterCriteria, setFilterCriteria] = useState("All");
 
+  // Load tasks from local storage on component mount
   useEffect(() => {
-    try {
-      const savedTasks = JSON.parse(localStorage.getItem("tasks")) || [];
-      setTaskList(savedTasks);
-    } catch (error) {
-      console.error("Error loading tasks from local storage:", error);
+    const savedTasks = localStorage.getItem("tasks");
+    if (savedTasks) {
+      try {
+        setTaskList(JSON.parse(savedTasks));
+      } catch (error) {
+        console.error("Error parsing tasks from local storage:", error);
+      }
     }
   }, []);
 
+  // Save tasks to local storage whenever taskList changes
   useEffect(() => {
     try {
       localStorage.setItem("tasks", JSON.stringify(taskList));
@@ -25,51 +30,62 @@ export default function TaskListManagement() {
     }
   }, [taskList]);
 
+  // Function to update task list (add or edit)
   const updateTaskList = useCallback(
     (title, description, status) => {
       if (editTaskIndex !== null) {
-        const updatedTasks = taskList.map((task, index) =>
-          index === editTaskIndex
-            ? { ...task, title, description, status }
-            : task
+        setTaskList((prevTaskList) =>
+          prevTaskList.map((task, index) =>
+            index === editTaskIndex
+              ? { ...task, title, description, status }
+              : task
+          )
         );
-        setTaskList(updatedTasks);
         setEditTaskIndex(null);
       } else {
-        setTaskList([...taskList, { title, description, status }]);
+        setTaskList((prevTaskList) => [
+          ...prevTaskList,
+          { title, description, status },
+        ]);
       }
       setTaskTitle("");
       setTaskDescription("");
       setTaskStatus("");
     },
-    [editTaskIndex, taskList]
+    [editTaskIndex]
   );
 
+  // Function to save a new or updated task
   const saveTask = useCallback(() => {
     const title = taskTitle.trim();
-    const description = taskDescription.trim().toLowerCase();
+    const description = taskDescription.trim();
     if (title && description) {
       updateTaskList(title, description, taskStatus);
     }
   }, [taskTitle, taskDescription, taskStatus, updateTaskList]);
 
+  // Function to clear all tasks
   const clearTaskList = useCallback(() => {
     setTaskList([]);
     localStorage.removeItem("tasks");
   }, []);
 
+  // Function to handle input changes
   const handleInputChange = useCallback((event) => {
-    if (event.target.name === "title") {
-      setTaskTitle(event.target.value);
-    } else if (event.target.name === "description") {
-      setTaskDescription(event.target.value);
+    const { name, value } = event.target;
+    if (name === "title") {
+      setTaskTitle(value);
+    } else if (name === "description") {
+      setTaskDescription(value);
     }
   }, []);
 
+  // Function to handle status changes
   const handleStatusChange = useCallback((event) => {
     setTaskStatus(event.target.value);
   }, []);
 
+  // Function to handle task editing
   const handleTaskEdit = useCallback(
     (index) => {
       const task = taskList[index];
@@ -81,23 +97,23 @@ export default function TaskListManagement() {
     [taskList]
   );
 
-  const handleTaskDelete = useCallback(
-    (index) => {
-      const updatedTasks = taskList.filter((_, i) => i !== index);
-      setTaskList(updatedTasks);
-    },
-    [taskList]
-  );
+  // Function to handle task deletion
+  const handleTaskDelete = useCallback((index) => {
+    setTaskList((prevTaskList) => prevTaskList.filter((_, i) => i !== index));
+  }, []);
 
+  // Function to handle filter criteria changes
   const handleFilterChange = useCallback((event) => {
     setFilterCriteria(event.target.value);
   }, []);
 
+  // Filter tasks based on the selected criteria
   const filteredTasks = useMemo(() => {
     if (filterCriteria === "All") return taskList;
     return taskList.filter((task) => task.status === filterCriteria);
   }, [taskList, filterCriteria]);
 
+  // Check if there are any tasks to display
   const hasTasks = filteredTasks.length > 0;
 
   return (
