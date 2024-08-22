@@ -63,7 +63,7 @@ export default function TaskListManagement() {
   // Memoized function to clear all tasks
   const clearHistory = useCallback(() => {
     setHistory([]);
-    localStorage.removeItem("tasks"); // Clear local storage
+    // localStorage.removeItem("tasks"); // Clear local storage
   }, []);
 
   // Handle input changes

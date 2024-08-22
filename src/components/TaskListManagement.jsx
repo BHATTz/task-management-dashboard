@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 
 export default function TaskListManagement() {
   // State variables
@@ -13,22 +13,9 @@ export default function TaskListManagement() {
   useEffect(() => {
     const savedTasks = localStorage.getItem("tasks");
     if (savedTasks) {
-      try {
-        setTaskList(JSON.parse(savedTasks));
-      } catch (error) {
-        console.error("Error parsing tasks from local storage:", error);
-      }
+      setTaskList(JSON.parse(savedTasks));
     }
   }, []);
-
-  // Effect to save tasks to local storage whenever taskList changes
-  useEffect(() => {
-    try {
-      localStorage.setItem("tasks", JSON.stringify(taskList));
-    } catch (error) {
-      console.error("Error saving tasks to local storage:", error);
-    }
-  }, [taskList]);
 
   // Function to handle task updates (add or edit)
   function updateTaskList(title, description, status) {
@@ -57,12 +44,13 @@ export default function TaskListManagement() {
     if (title && description) {
       updateTaskList(title, description, taskStatus);
     }
+    localStorage.setItem("tasks", JSON.stringify(taskList));
   }
 
   // Function to clear all tasks
   function clearTaskList() {
     setTaskList([]);
-    localStorage.removeItem("tasks");
+    // localStorage("tasks");
   }
 
   // Function to handle input changes
