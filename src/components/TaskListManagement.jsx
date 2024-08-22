@@ -9,7 +9,7 @@ export default function TaskListManagement() {
   const [editTaskIndex, setEditTaskIndex] = useState(null);
   const [filterCriteria, setFilterCriteria] = useState("All");
 
-  // Load tasks from local storage on component mount
+  // Effect to load tasks from local storage on component mount
   useEffect(() => {
     const savedTasks = localStorage.getItem("tasks");
     if (savedTasks) {
@@ -21,7 +21,7 @@ export default function TaskListManagement() {
     }
   }, []);
 
-  // Save tasks to local storage whenever taskList changes
+  // Effect to save tasks to local storage whenever taskList changes
   useEffect(() => {
     try {
       localStorage.setItem("tasks", JSON.stringify(taskList));
@@ -30,82 +30,81 @@ export default function TaskListManagement() {
     }
   }, [taskList]);
 
-  // Function to update task list (add or edit)
-  const updateTaskList = useCallback(
-    (title, description, status) => {
-      if (editTaskIndex !== null) {
-        setTaskList((prevTaskList) =>
-          prevTaskList.map((task, index) =>
-            index === editTaskIndex
-              ? { ...task, title, description, status }
-              : task
-          )
-        );
-        setEditTaskIndex(null);
-      } else {
-        setTaskList((prevTaskList) => [
-          ...prevTaskList,
-          { title, description, status },
-        ]);
-      }
-      setTaskTitle("");
-      setTaskDescription("");
-      setTaskStatus("");
-    },
-    [editTaskIndex]
-  );
+  // Function to handle task updates (add or edit)
+  function updateTaskList(title, description, status) {
+    if (editTaskIndex !== null) {
+      setTaskList((prevTaskList) =>
+        prevTaskList.map((task, index) =>
+          index === editTaskIndex
+            ? { ...task, title, description, status }
+            : task
+        )
+      );
+      setEditTaskIndex(null);
+    } else {
+      setTaskList((prevTaskList) => [
+        ...prevTaskList,
+        { title, description, status },
+      ]);
+    }
+    resetForm();
+  }
 
   // Function to save a new or updated task
-  const saveTask = useCallback(() => {
+  function saveTask() {
     const title = taskTitle.trim();
     const description = taskDescription.trim();
     if (title && description) {
       updateTaskList(title, description, taskStatus);
     }
-  }, [taskTitle, taskDescription, taskStatus, updateTaskList]);
+  }
 
   // Function to clear all tasks
-  const clearTaskList = useCallback(() => {
+  function clearTaskList() {
     setTaskList([]);
     localStorage.removeItem("tasks");
-  }, []);
+  }
 
   // Function to handle input changes
-  const handleInputChange = useCallback((event) => {
+  function handleInputChange(event) {
     const { name, value } = event.target;
     if (name === "title") {
       setTaskTitle(value);
     } else if (name === "description") {
       setTaskDescription(value);
     }
-  }, []);
+  }
 
   // Function to handle status changes
-  const handleStatusChange = useCallback((event) => {
+  function handleStatusChange(event) {
     setTaskStatus(event.target.value);
-  }, []);
+  }
 
   // Function to handle task editing
-  const handleTaskEdit = useCallback(
-    (index) => {
-      const task = taskList[index];
-      setTaskTitle(task.title);
-      setTaskDescription(task.description);
-      setTaskStatus(task.status);
-      setEditTaskIndex(index);
-    },
-    [taskList]
-  );
+  function handleTaskEdit(index) {
+    const task = taskList[index];
+    setTaskTitle(task.title);
+    setTaskDescription(task.description);
+    setTaskStatus(task.status);
+    setEditTaskIndex(index);
+  }
 
   // Function to handle task deletion
-  const handleTaskDelete = useCallback((index) => {
+  function handleTaskDelete(index) {
     setTaskList((prevTaskList) => prevTaskList.filter((_, i) => i !== index));
-  }, []);
+  }
 
   // Function to handle filter criteria changes
-  const handleFilterChange = useCallback((event) => {
+  function handleFilterChange(event) {
     setFilterCriteria(event.target.value);
-  }, []);
+  }
+
+  // Function to reset form fields
+  function resetForm() {
+    setTaskTitle("");
+    setTaskDescription("");
+    setTaskStatus("");
+  }
 
   // Filter tasks based on the selected criteria
   const filteredTasks = useMemo(() => {
