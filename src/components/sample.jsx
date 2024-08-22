@@ -1,104 +1,118 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 
 export default function TaskListManagement() {
-  const [taskDescription, setTaskDescription] = useState("");
-  const [taskTitle, setTaskTitle] = useState("");
-  const [taskList, setTaskList] = useState([]);
-  const [taskStatus, setTaskStatus] = useState("");
-  const [editTaskIndex, setEditTaskIndex] = useState(null);
-  const [filterCriteria, setFilterCriteria] = useState("All");
+  const [text, setText] = useState(""); // Description of the task
+  const [title, setTitle] = useState(""); // Title of the task
+  const [history, setHistory] = useState([]); // List of tasks
+  const [selectedOption, setSelectedOption] = useState(""); // State for selected option
+  const [editIndex, setEditIndex] = useState(null); // Index of the task being edited
+  const [filter, setFilter] = useState("All"); // State for filter criteria
 
+  // Load tasks from local storage when the component mounts
   useEffect(() => {
     try {
-      const savedTasks = JSON.parse(localStorage.getItem("tasks")) || [];
-      setTaskList(savedTasks);
+      const savedHistory = JSON.parse(localStorage.getItem("tasks")) || [];
+      setHistory(savedHistory);
     } catch (error) {
       console.error("Error loading tasks from local storage:", error);
     }
   }, []);
 
+  // Save tasks to local storage whenever history changes
   useEffect(() => {
     try {
-      localStorage.setItem("tasks", JSON.stringify(taskList));
+      localStorage.setItem("tasks", JSON.stringify(history));
     } catch (error) {
       console.error("Error saving tasks to local storage:", error);
     }
-  }, [taskList]);
+  }, [history]);
 
-  const updateTaskList = useCallback(
-    (title, description, status) => {
-      if (editTaskIndex !== null) {
-        const updatedTasks = taskList.map((task, index) =>
-          index === editTaskIndex
-            ? { ...task, title, description, status }
-            : task
+  // Memoized function to update the history (add or edit tasks)
+  const updateHistory = useCallback(
+    (newTitle, newText, option) => {
+      if (editIndex !== null) {
+        // Update existing task
+        const updatedHistory = history.map((item, index) =>
+          index === editIndex
+            ? { ...item, title: newTitle, text: newText, option }
+            : item
         );
-        setTaskList(updatedTasks);
-        setEditTaskIndex(null);
+        setHistory(updatedHistory);
+        setEditIndex(null); // Reset editIndex after saving
       } else {
-        setTaskList([...taskList, { title, description, status }]);
+        // Add new task
+        setHistory([...history, { title: newTitle, text: newText, option }]);
       }
-      setTaskTitle("");
-      setTaskDescription("");
-      setTaskStatus("");
+      // Clear input fields
+      setTitle("");
+      setText("");
+      setSelectedOption("");
     },
-    [editTaskIndex, taskList]
+    [editIndex, history]
   );
 
+  // Save task function using the updateHistory callback
   const saveTask = useCallback(() => {
-    const title = taskTitle.trim();
-    const description = taskDescription.trim().toLowerCase();
-    if (title && description) {
-      updateTaskList(title, description, taskStatus);
+    const newTitle = title.trim();
+    const newText = text.trim().toLowerCase();
+    if (newTitle && newText) {
+      updateHistory(newTitle, newText, selectedOption);
     }
-  }, [taskTitle, taskDescription, taskStatus, updateTaskList]);
+  }, [title, text, selectedOption, updateHistory]);
 
-  const clearTaskList = useCallback(() => {
-    setTaskList([]);
-    localStorage.removeItem("tasks");
+  // Memoized function to clear all tasks
+  const clearHistory = useCallback(() => {
+    setHistory([]);
+    localStorage.removeItem("tasks"); // Clear local storage
   }, []);
 
-  const handleInputChange = useCallback((event) => {
+  // Handle input changes
+  const handleChange = useCallback((event) => {
     if (event.target.name === "title") {
-      setTaskTitle(event.target.value);
-    } else if (event.target.name === "description") {
-      setTaskDescription(event.target.value);
+      setTitle(event.target.value);
+    } else if (event.target.name === "text") {
+      setText(event.target.value);
     }
   }, []);
 
-  const handleStatusChange = useCallback((event) => {
-    setTaskStatus(event.target.value);
+  // Handle option change
+  const handleOptionChange = useCallback((event) => {
+    setSelectedOption(event.target.value);
   }, []);
 
-  const handleTaskEdit = useCallback(
+  // Handle task edit
+  const handleEdit = useCallback(
     (index) => {
-      const task = taskList[index];
-      setTaskTitle(task.title);
-      setTaskDescription(task.description);
-      setTaskStatus(task.status);
-      setEditTaskIndex(index);
+      const task = history[index];
+      setTitle(task.title);
+      setText(task.text);
+      setSelectedOption(task.option);
+      setEditIndex(index);
     },
-    [taskList]
+    [history]
   );
 
-  const handleTaskDelete = useCallback(
+  // Handle task delete
+  const handleDelete = useCallback(
     (index) => {
-      const updatedTasks = taskList.filter((_, i) => i !== index);
-      setTaskList(updatedTasks);
+      const updatedHistory = history.filter((_, i) => i !== index);
+      setHistory(updatedHistory);
     },
-    [taskList]
+    [history]
   );
 
+  // Handle filter change
   const handleFilterChange = useCallback((event) => {
-    setFilterCriteria(event.target.value);
+    setFilter(event.target.value);
   }, []);
 
-  const filteredTasks = useMemo(() => {
-    if (filterCriteria === "All") return taskList;
-    return taskList.filter((task) => task.status === filterCriteria);
-  }, [taskList, filterCriteria]);
+  // Filter tasks based on the selected filter option
+  const filteredHistory = useMemo(() => {
+    if (filter === "All") return history;
+    return history.filter((task) => task.option === filter);
+  }, [history, filter]);
 
-  const hasTasks = filteredTasks.length > 0;
+  const hasTasks = filteredHistory.length > 0;
 
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
@@ -109,16 +123,16 @@ export default function TaskListManagement() {
       <input
         name="title"
         placeholder="Task title"
-        value={taskTitle}
-        onChange={handleInputChange}
+        value={title}
+        onChange={handleChange}
         className="block w-full max-w-md sm:max-w-2xl mx-auto p-3 sm:p-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
       />
 
       <textarea
-        name="description"
+        name="text"
         placeholder="Add your task description here."
-        value={taskDescription}
-        onChange={handleInputChange}
+        value={text}
+        onChange={handleChange}
         rows="4"
         className="block w-full max-w-md sm:max-w-2xl mx-auto p-3 sm:p-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
       ></textarea>
@@ -128,8 +142,8 @@ export default function TaskListManagement() {
           <input
             type="radio"
             value="Pending"
-            checked={taskStatus === "Pending"}
-            onChange={handleStatusChange}
+            checked={selectedOption === "Pending"}
+            onChange={handleOptionChange}
             className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
           />
           <span className="text-gray-700">Pending</span>
@@ -138,8 +152,8 @@ export default function TaskListManagement() {
           <input
             type="radio"
             value="In Progress"
-            checked={taskStatus === "In Progress"}
-            onChange={handleStatusChange}
+            checked={selectedOption === "In Progress"}
+            onChange={handleOptionChange}
             className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
           />
           <span className="text-gray-700">In Progress</span>
@@ -148,8 +162,8 @@ export default function TaskListManagement() {
           <input
             type="radio"
             value="Completed"
-            checked={taskStatus === "Completed"}
-            onChange={handleStatusChange}
+            checked={selectedOption === "Completed"}
+            onChange={handleOptionChange}
             className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
           />
           <span className="text-gray-700">Completed</span>
@@ -161,11 +175,11 @@ export default function TaskListManagement() {
           onClick={saveTask}
           className="bg-blue-500 text-white py-2 px-4 rounded-lg shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          {editTaskIndex !== null ? "Update Task" : "Add Task"}
+          {editIndex !== null ? "Update Task" : "Add Task"}
         </button>
         {hasTasks && (
           <select
-            value={filterCriteria}
+            value={filter}
             onChange={handleFilterChange}
             className="ml-4 bg-green-500 text-white py-1 px-2 rounded-lg shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
           >
@@ -180,7 +194,7 @@ export default function TaskListManagement() {
       <h3 className="text-xl sm:text-2xl font-semibold text-center mt-6 mb-4 text-gray-800">
         Task Dashboard
       </h3>
-      {filteredTasks.length === 0 ? (
+      {filteredHistory.length === 0 ? (
         <p className="text-center text-gray-500">No tasks available.</p>
       ) : (
         <div className="overflow-x-auto">
@@ -202,26 +216,26 @@ export default function TaskListManagement() {
               </tr>
             </thead>
             <tbody>
-              {filteredTasks.map((task, index) => (
+              {filteredHistory.map((item, index) => (
                 <tr key={index} className="hover:bg-gray-50">
                   <td className="border-b border-gray-300 p-3 sm:p-3">
-                    {task.title}
+                    {item.title}
                   </td>
                   <td className="border-b border-gray-300 p-3 sm:p-3 max-h-20 overflow-y-auto">
-                    {task.description}
+                    {item.text}
                   </td>
                   <td className="border-b border-gray-300 p-3 sm:p-4">
-                    {task.status}
+                    {item.option}
                   </td>
                   <td className="border-b border-gray-300 p-3 sm:p-4 flex gap-2">
                     <button
-                      onClick={() => handleTaskEdit(index)}
+                      onClick={() => handleEdit(index)}
                       className="bg-yellow-500 text-white py-1 px-2 rounded-lg shadow-sm hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                     >
                       Edit Task
                     </button>
                     <button
-                      onClick={() => handleTaskDelete(index)}
+                      onClick={() => handleDelete(index)}
                       className="bg-red-500 text-white py-1 px-2 rounded-lg shadow-sm hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
                     >
                       Delete Task
@@ -236,7 +250,7 @@ export default function TaskListManagement() {
 
       <div className="flex justify-center mt-6">
         <button
-          onClick={clearTaskList}
+          onClick={clearHistory}
           className="bg-red-500 text-white py-2 px-4 rounded-lg shadow-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
         >
           Clear All
