@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 
 export default function TaskListManagement() {
-  // State variables
   const [taskDescription, setTaskDescription] = useState("");
   const [taskTitle, setTaskTitle] = useState("");
   const [taskList, setTaskList] = useState([]);
@@ -9,53 +8,51 @@ export default function TaskListManagement() {
   const [editTaskIndex, setEditTaskIndex] = useState(null);
   const [filterCriteria, setFilterCriteria] = useState("All");
 
-  // Effect to load tasks from local storage on component mount
-  useEffect(() => {
+  useEffect(function () {
     const savedTasks = localStorage.getItem("tasks");
     if (savedTasks) {
       setTaskList(JSON.parse(savedTasks));
     }
   }, []);
 
-  // Function to handle task updates (add or edit)
+  function updateLocalStorage(updatedTasks) {
+    localStorage.setItem("tasks", JSON.stringify(updatedTasks));
+  }
+
   function updateTaskList(title, description, status) {
+    let updatedTasks;
     if (editTaskIndex !== null) {
-      setTaskList((prevTaskList) =>
-        prevTaskList.map((task, index) =>
-          index === editTaskIndex
-            ? { ...task, title, description, status }
-            : task
-        )
-      );
+      updatedTasks = taskList.map(function (task, index) {
+        if (index === editTaskIndex) {
+          return { ...task, title, description, status };
+        }
+        return task;
+      });
       setEditTaskIndex(null);
     } else {
-      setTaskList((prevTaskList) => [
-        ...prevTaskList,
-        { title, description, status },
-      ]);
+      updatedTasks = [...taskList, { title, description, status }];
     }
+    setTaskList(updatedTasks);
+    updateLocalStorage(updatedTasks);
     resetForm();
   }
 
-  // Function to save a new or updated task
   function saveTask() {
     const title = taskTitle.trim();
     const description = taskDescription.trim();
     if (title && description) {
       updateTaskList(title, description, taskStatus);
     }
-    localStorage.setItem("tasks", JSON.stringify(taskList));
   }
 
-  // Function to clear all tasks
   function clearTaskList() {
     setTaskList([]);
-    // localStorage("tasks");
+    updateLocalStorage([]);
   }
 
-  // Function to handle input changes
   function handleInputChange(event) {
-    const { name, value } = event.target;
+    const name = event.target.name;
+    const value = event.target.value;
     if (name === "title") {
       setTaskTitle(value);
     } else if (name === "description") {
@@ -63,12 +60,10 @@ export default function TaskListManagement() {
     }
   }
 
-  // Function to handle status changes
   function handleStatusChange(event) {
     setTaskStatus(event.target.value);
   }
 
-  // Function to handle task editing
   function handleTaskEdit(index) {
     const task = taskList[index];
     setTaskTitle(task.title);
@@ -77,30 +72,36 @@ export default function TaskListManagement() {
     setEditTaskIndex(index);
   }
 
-  // Function to handle task deletion
   function handleTaskDelete(index) {
-    setTaskList((prevTaskList) => prevTaskList.filter((_, i) => i !== index));
+    const updatedTasks = taskList.filter(function (_, i) {
+      return i !== index;
+    });
+    setTaskList(updatedTasks);
+    updateLocalStorage(updatedTasks);
   }
 
-  // Function to handle filter criteria changes
   function handleFilterChange(event) {
     setFilterCriteria(event.target.value);
   }
 
-  // Function to reset form fields
   function resetForm() {
     setTaskTitle("");
     setTaskDescription("");
     setTaskStatus("");
   }
 
-  // Filter tasks based on the selected criteria
-  const filteredTasks = useMemo(() => {
-    if (filterCriteria === "All") return taskList;
-    return taskList.filter((task) => task.status === filterCriteria);
-  }, [taskList, filterCriteria]);
+  const filteredTasks = useMemo(
+    function () {
+      if (filterCriteria === "All") {
+        return taskList;
+      }
+      return taskList.filter(function (task) {
+        return task.status === filterCriteria;
+      });
+    },
+    [taskList, filterCriteria]
+  );
 
-  // Check if there are any tasks to display
   const hasTasks = filteredTasks.length > 0;
 
   return (
@@ -205,33 +206,39 @@ export default function TaskListManagement() {
               </tr>
             </thead>
             <tbody>
-              {filteredTasks.map((task, index) => (
-                <tr key={index} className="hover:bg-gray-50">
-                  <td className="border-b border-gray-300 p-3 sm:p-3">
-                    {task.title}
-                  </td>
-                  <td className="border-b border-gray-300 p-3 sm:p-3 max-h-20 overflow-y-auto">
-                    {task.description}
-                  </td>
-                  <td className="border-b border-gray-300 p-3 sm:p-4">
-                    {task.status}
-                  </td>
-                  <td className="border-b border-gray-300 p-3 sm:p-4 flex gap-2">
-                    <button
-                      onClick={() => handleTaskEdit(index)}
-                      className="bg-yellow-500 text-white py-1 px-2 rounded-lg shadow-sm hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                    >
-                      Edit Task
-                    </button>
-                    <button
-                      onClick={() => handleTaskDelete(index)}
-                      className="bg-red-500 text-white py-1 px-2 rounded-lg shadow-sm hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
-                    >
-                      Delete Task
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {filteredTasks.map(function (task, index) {
+                return (
+                  <tr key={index} className="hover:bg-gray-50">
+                    <td className="border-b border-gray-300 p-3 sm:p-3">
+                      {task.title}
+                    </td>
+                    <td className="border-b border-gray-300 p-3 sm:p-3 max-h-20 overflow-y-auto">
+                      {task.description}
+                    </td>
+                    <td className="border-b border-gray-300 p-3 sm:p-4">
+                      {task.status}
+                    </td>
+                    <td className="border-b border-gray-300 p-3 sm:p-4 flex gap-2">
+                      <button
+                        onClick={function () {
+                          handleTaskEdit(index);
+                        }}
+                        className="bg-yellow-500 text-white py-1 px-2 rounded-lg shadow-sm hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                      >
+                        Edit Task
+                      </button>
+                      <button
+                        onClick={function () {
+                          handleTaskDelete(index);
+                        }}
+                        className="bg-red-500 text-white py-1 px-2 rounded-lg shadow-sm hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
+                      >
+                        Delete Task
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
