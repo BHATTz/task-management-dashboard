@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 
 export default function TaskListManagement() {
   const [taskDescription, setTaskDescription] = useState("");
@@ -15,42 +15,51 @@ export default function TaskListManagement() {
     }
   }, []);
 
-  function updateLocalStorage(updatedTasks) {
+  const updateLocalStorage = useCallback(function (updatedTasks) {
     localStorage.setItem("tasks", JSON.stringify(updatedTasks));
-  }
+  }, []);
 
-  function updateTaskList(title, description, status) {
-    let updatedTasks;
-    if (editTaskIndex !== null) {
-      updatedTasks = taskList.map(function (task, index) {
-        if (index === editTaskIndex) {
-          return { ...task, title, description, status };
-        }
-        return task;
-      });
-      setEditTaskIndex(null);
-    } else {
-      updatedTasks = [...taskList, { title, description, status }];
-    }
-    setTaskList(updatedTasks);
-    updateLocalStorage(updatedTasks);
-    resetForm();
-  }
+  const updateTaskList = useCallback(
+    function (title, description, status) {
+      let updatedTasks;
+      if (editTaskIndex !== null) {
+        updatedTasks = taskList.map(function (task, index) {
+          if (index === editTaskIndex) {
+            return { ...task, title, description, status };
+          }
+          return task;
+        });
+        setEditTaskIndex(null);
+      } else {
+        updatedTasks = [...taskList, { title, description, status }];
+      }
+      setTaskList(updatedTasks);
+      updateLocalStorage(updatedTasks);
+      resetForm();
+    },
+    [editTaskIndex, taskList, updateLocalStorage]
+  );
 
-  function saveTask() {
-    const title = taskTitle.trim();
-    const description = taskDescription.trim();
-    if (title && description) {
-      updateTaskList(title, description, taskStatus);
-    }
-  }
+  const saveTask = useCallback(
+    function () {
+      const title = taskTitle.trim();
+      const description = taskDescription.trim();
+      if (title && description) {
+        updateTaskList(title, description, taskStatus);
+      }
+    },
+    [taskTitle, taskDescription, taskStatus, updateTaskList]
+  );
 
-  function clearTaskList() {
-    setTaskList([]);
-    updateLocalStorage([]);
-  }
+  const clearTaskList = useCallback(
+    function () {
+      setTaskList([]);
+      updateLocalStorage([]);
+    },
+    [updateLocalStorage]
+  );
 
-  function handleInputChange(event) {
+  const handleInputChange = useCallback(function (event) {
     const name = event.target.name;
     const value = event.target.value;
     if (name === "title") {
@@ -58,37 +67,43 @@ export default function TaskListManagement() {
     } else if (name === "description") {
       setTaskDescription(value);
     }
-  }
+  }, []);
 
-  function handleStatusChange(event) {
+  const handleStatusChange = useCallback(function (event) {
     setTaskStatus(event.target.value);
-  }
+  }, []);
 
-  function handleTaskEdit(index) {
-    const task = taskList[index];
-    setTaskTitle(task.title);
-    setTaskDescription(task.description);
-    setTaskStatus(task.status);
-    setEditTaskIndex(index);
-  }
+  const handleTaskEdit = useCallback(
+    function (index) {
+      const task = taskList[index];
+      setTaskTitle(task.title);
+      setTaskDescription(task.description);
+      setTaskStatus(task.status);
+      setEditTaskIndex(index);
+    },
+    [taskList]
+  );
 
-  function handleTaskDelete(index) {
-    const updatedTasks = taskList.filter(function (_, i) {
-      return i !== index;
-    });
-    setTaskList(updatedTasks);
-    updateLocalStorage(updatedTasks);
-  }
+  const handleTaskDelete = useCallback(
+    function (index) {
+      const updatedTasks = taskList.filter(function (_, i) {
+        return i !== index;
+      });
+      setTaskList(updatedTasks);
+      updateLocalStorage(updatedTasks);
+    },
+    [taskList, updateLocalStorage]
+  );
 
-  function handleFilterChange(event) {
+  const handleFilterChange = useCallback(function (event) {
     setFilterCriteria(event.target.value);
-  }
+  }, []);
 
-  function resetForm() {
+  const resetForm = useCallback(function () {
     setTaskTitle("");
     setTaskDescription("");
     setTaskStatus("");
-  }
+  }, []);
 
   const filteredTasks = useMemo(
     function () {
