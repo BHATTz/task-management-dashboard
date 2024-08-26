@@ -1,37 +1,41 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 export default function TaskListManagement() {
   const [taskDescription, setTaskDescription] = useState("");
   const [taskTitle, setTaskTitle] = useState("");
   const [taskList, setTaskList] = useState([]);
   const [taskStatus, setTaskStatus] = useState("");
+  const [taskDate, setTaskDate] = useState(new Date());
   const [editTaskIndex, setEditTaskIndex] = useState(null);
   const [filterCriteria, setFilterCriteria] = useState("All");
+  const [filterStartDate, setFilterStartDate] = useState(null);
+  const [filterEndDate, setFilterEndDate] = useState(null);
 
-  useEffect(function () {
+  useEffect(() => {
     const savedTasks = localStorage.getItem("tasks");
     if (savedTasks) {
       setTaskList(JSON.parse(savedTasks));
     }
   }, []);
 
-  const updateLocalStorage = useCallback(function (updatedTasks) {
+  const updateLocalStorage = useCallback((updatedTasks) => {
     localStorage.setItem("tasks", JSON.stringify(updatedTasks));
   }, []);
 
   const updateTaskList = useCallback(
-    function (title, description, status) {
+    (title, description, status, date) => {
       let updatedTasks;
       if (editTaskIndex !== null) {
-        updatedTasks = taskList.map(function (task, index) {
-          if (index === editTaskIndex) {
-            return { ...task, title, description, status };
-          }
-          return task;
-        });
+        updatedTasks = taskList.map((task, index) =>
+          index === editTaskIndex
+            ? { ...task, title, description, status, date }
+            : task
+        );
         setEditTaskIndex(null);
       } else {
-        updatedTasks = [...taskList, { title, description, status }];
+        updatedTasks = [...taskList, { title, description, status, date }];
       }
       setTaskList(updatedTasks);
       updateLocalStorage(updatedTasks);
@@ -40,28 +44,21 @@ export default function TaskListManagement() {
     [editTaskIndex, taskList, updateLocalStorage]
   );
 
-  const saveTask = useCallback(
-    function () {
-      const title = taskTitle.trim();
-      const description = taskDescription.trim();
-      if (title && description) {
-        updateTaskList(title, description, taskStatus);
-      }
-    },
-    [taskTitle, taskDescription, taskStatus, updateTaskList]
-  );
+  const saveTask = useCallback(() => {
+    const title = taskTitle.trim();
+    const description = taskDescription.trim();
+    if (title && description) {
+      updateTaskList(title, description, taskStatus, taskDate);
+    }
+  }, [taskTitle, taskDescription, taskStatus, taskDate, updateTaskList]);
 
-  const clearTaskList = useCallback(
-    function () {
-      setTaskList([]);
-      updateLocalStorage([]);
-    },
-    [updateLocalStorage]
-  );
+  const clearTaskList = useCallback(() => {
+    setTaskList([]);
+    updateLocalStorage([]);
+  }, [updateLocalStorage]);
 
-  const handleInputChange = useCallback(function (event) {
-    const name = event.target.name;
-    const value = event.target.value;
+  const handleInputChange = useCallback((event) => {
+    const { name, value } = event.target;
     if (name === "title") {
       setTaskTitle(value);
     } else if (name === "description") {
@@ -69,53 +66,58 @@ export default function TaskListManagement() {
     }
   }, []);
 
-  const handleStatusChange = useCallback(function (event) {
+  const handleStatusChange = useCallback((event) => {
     setTaskStatus(event.target.value);
   }, []);
 
   const handleTaskEdit = useCallback(
-    function (index) {
+    (index) => {
       const task = taskList[index];
       setTaskTitle(task.title);
       setTaskDescription(task.description);
       setTaskStatus(task.status);
+      setTaskDate(new Date(task.date)); // Set the date for editing
       setEditTaskIndex(index);
     },
     [taskList]
   );
 
   const handleTaskDelete = useCallback(
-    function (index) {
-      const updatedTasks = taskList.filter(function (_, i) {
-        return i !== index;
-      });
+    (index) => {
+      const updatedTasks = taskList.filter((_, i) => i !== index);
       setTaskList(updatedTasks);
       updateLocalStorage(updatedTasks);
     },
     [taskList, updateLocalStorage]
   );
 
-  const handleFilterChange = useCallback(function (event) {
+  const handleFilterChange = useCallback((event) => {
     setFilterCriteria(event.target.value);
   }, []);
 
-  const resetForm = useCallback(function () {
+  const handleDateFilterChange = useCallback((startDate, endDate) => {
+    setFilterStartDate(startDate);
+    setFilterEndDate(endDate);
+  }, []);
+
+  const resetForm = useCallback(() => {
     setTaskTitle("");
     setTaskDescription("");
     setTaskStatus("");
+    setTaskDate(new Date()); // Reset the date
   }, []);
 
-  const filteredTasks = useMemo(
-    function () {
-      if (filterCriteria === "All") {
-        return taskList;
-      }
-      return taskList.filter(function (task) {
-        return task.status === filterCriteria;
-      });
-    },
-    [taskList, filterCriteria]
-  );
+  const filteredTasks = useMemo(() => {
+    return taskList.filter((task) => {
+      const taskDate = new Date(task.date);
+      const isStatusMatch =
+        filterCriteria === "All" || task.status === filterCriteria;
+      const isDateMatch =
+        (!filterStartDate || taskDate >= filterStartDate) &&
+        (!filterEndDate || taskDate <= filterEndDate);
+      return isStatusMatch && isDateMatch;
+    });
+  }, [taskList, filterCriteria, filterStartDate, filterEndDate]);
 
   const hasTasks = filteredTasks.length > 0;
 
@@ -175,24 +177,61 @@ export default function TaskListManagement() {
         </label>
       </div>
 
+      <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 mb-4">
+        <label className="block text-gray-700 mb-2">Task Date</label>
+        <DatePicker
+          selected={taskDate}
+          onChange={(date) => setTaskDate(date)}
+          className="block w-full max-w-md sm:max-w-2xl mx-auto p-3 sm:p-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          dateFormat="MMMM d, yyyy"
+        />
+      </div>
+
       <div className="flex justify-center mb-6">
         <button
           onClick={saveTask}
-          className="bg-blue-500 text-white py-2 px-4 rounded-lg shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="bg-blue-500 text-white py-2 px-4 rounded-lg shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 h-16 mt-6"
         >
           {editTaskIndex !== null ? "Update Task" : "Add Task"}
         </button>
         {hasTasks && (
-          <select
-            value={filterCriteria}
-            onChange={handleFilterChange}
-            className="ml-4 bg-green-500 text-white py-1 px-2 rounded-lg shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
-          >
-            <option value="All">All</option>
-            <option value="Pending">Pending</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Completed">Completed</option>
-          </select>
+          <>
+            <select
+              value={filterCriteria}
+              onChange={handleFilterChange}
+              className="ml-4 bg-green-500 text-white py-1 px-2 rounded-lg shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 h-16 mt-6"
+            >
+              <option value="All">All</option>
+              <option value="Pending">Pending</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Completed">Completed</option>
+            </select>
+
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 ml-4">
+              <div className="flex flex-col">
+                <label className="block text-gray-700 mb-2">Start Date</label>
+                <DatePicker
+                  selected={filterStartDate}
+                  onChange={(date) =>
+                    handleDateFilterChange(date, filterEndDate)
+                  }
+                  className="block w-full max-w-md sm:max-w-2xl mx-auto p-3 sm:p-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  dateFormat="MMMM d, yyyy"
+                />
+              </div>
+              <div className="flex flex-col">
+                <label className="block text-gray-700 mb-2">End Date</label>
+                <DatePicker
+                  selected={filterEndDate}
+                  onChange={(date) =>
+                    handleDateFilterChange(filterStartDate, date)
+                  }
+                  className="block w-full max-w-md sm:max-w-2xl mx-auto p-3 sm:p-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  dateFormat="MMMM d, yyyy"
+                />
+              </div>
+            </div>
+          </>
         )}
       </div>
 
@@ -215,45 +254,45 @@ export default function TaskListManagement() {
                 <th className="border-b border-gray-300 p-3 w-32 sm:p-4 text-left bg-gray-100">
                   Status
                 </th>
+                <th className="border-b border-gray-300 p-3 w-40 sm:p-4 text-left bg-gray-100">
+                  Date
+                </th>
                 <th className="border-b border-gray-300 p-3 w-52 sm:p-4 text-left bg-gray-100">
                   Operations
                 </th>
               </tr>
             </thead>
             <tbody>
-              {filteredTasks.map(function (task, index) {
-                return (
-                  <tr key={index} className="hover:bg-gray-50">
-                    <td className="border-b border-gray-300 p-3 sm:p-3">
-                      {task.title}
-                    </td>
-                    <td className="border-b border-gray-300 p-3 sm:p-3 max-h-20 overflow-y-auto">
-                      {task.description}
-                    </td>
-                    <td className="border-b border-gray-300 p-3 sm:p-4">
-                      {task.status}
-                    </td>
-                    <td className="border-b border-gray-300 p-3 sm:p-4 flex gap-2">
-                      <button
-                        onClick={function () {
-                          handleTaskEdit(index);
-                        }}
-                        className="bg-yellow-500 text-white py-1 px-2 rounded-lg shadow-sm hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                      >
-                        Edit Task
-                      </button>
-                      <button
-                        onClick={function () {
-                          handleTaskDelete(index);
-                        }}
-                        className="bg-red-500 text-white py-1 px-2 rounded-lg shadow-sm hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
-                      >
-                        Delete Task
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
+              {filteredTasks.map((task, index) => (
+                <tr key={index} className="hover:bg-gray-50">
+                  <td className="border-b border-gray-300 p-3 sm:p-3">
+                    {task.title}
+                  </td>
+                  <td className="border-b border-gray-300 p-3 sm:p-3 max-h-20 overflow-y-auto">
+                    {task.description}
+                  </td>
+                  <td className="border-b border-gray-300 p-3 sm:p-4">
+                    {task.status}
+                  </td>
+                  <td className="border-b border-gray-300 p-3 sm:p-4">
+                    {new Date(task.date).toLocaleDateString()}
+                  </td>
+                  <td className="border-b border-gray-300 p-3 sm:p-4 flex gap-2">
+                    <button
+                      onClick={() => handleTaskEdit(index)}
+                      className="bg-yellow-500 text-white py-1 px-2 rounded-lg shadow-sm hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    >
+                      Edit Task
+                    </button>
+                    <button
+                      onClick={() => handleTaskDelete(index)}
+                      className="bg-red-500 text-white py-1 px-2 rounded-lg shadow-sm hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    >
+                      Delete Task
+                    </button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
